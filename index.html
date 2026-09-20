@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Design Fail Watch — v0</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app" class="skin-a">
+    <header class="top">
+      <div class="title-block">
+        <h1>Design Fail Watch</h1>
+        <p class="tagline" id="tagline">Build the path. Press Play. Watch where the promise breaks.</p>
+      </div>
+      <!-- Skin A only for public share demo -->
+      <div class="skin-toggle" role="group" aria-label="Skin" hidden>
+        <button type="button" id="btn-skin-a" class="skin-btn active" data-skin="a">A Abstract</button>
+        <button type="button" id="btn-skin-b" class="skin-btn" data-skin="b">B Drawing</button>
+      </div>
+    </header>
+
+    <p class="glance-hint" id="glance-hint" role="status">Paint path S→G, then Play</p>
+
+    <main class="layout">
+      <aside class="panel">
+        <section class="tools phase-build">
+          <h2><span class="phase-num">1</span> Build</h2>
+          <div class="tool-row">
+            <button type="button" class="tool active" id="tool-paint" data-tool="paint">Paint path</button>
+            <button type="button" class="tool" id="tool-erase" data-tool="erase">Erase</button>
+          </div>
+          <p class="hint" id="build-hint">Paint tiles from Start (S) to Goal (G). Then press Play.</p>
+        </section>
+
+        <section class="run phase-play">
+          <h2><span class="phase-num">2</span> Play</h2>
+          <div class="tool-row">
+            <button type="button" class="primary" id="btn-play">Play</button>
+            <button type="button" id="btn-stop" disabled>Stop</button>
+            <button type="button" id="btn-reset">Reset grid</button>
+          </div>
+          <p class="status" id="status">Mode: Build — paint a continuous path from Start (S) to Goal (G).</p>
+        </section>
+
+        <section class="legend" id="legend">
+          <h2>Legend</h2>
+          <ul id="legend-list"></ul>
+        </section>
+
+        <section class="rule">
+          <h2>Deterministic rule</h2>
+          <p id="rule-text" class="rule-text"></p>
+        </section>
+      </aside>
+
+      <section class="stage-wrap">
+        <div id="stage" class="stage" aria-label="Grid stage">
+          <canvas id="canvas" width="480" height="480"></canvas>
+          <div id="overlay-msg" class="overlay-msg hidden"></div>
+        </div>
+        <p class="footer-note" id="footer-note"></p>
+      </section>
+    </main>
+  </div>
+
+  <script src="core.js"></script>
+  <script src="skins.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
