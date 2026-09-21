@@ -20,7 +20,7 @@
       </div>
     </header>
 
-    <p class="glance-hint" id="glance-hint" role="status">Paint path S→G, then Play</p>
+    <p class="glance-hint" id="glance-hint" role="status">Broken design — press Play.</p>
 
     <main class="layout">
       <aside class="panel">
@@ -30,7 +30,7 @@
             <button type="button" class="tool active" id="tool-paint" data-tool="paint">Paint path</button>
             <button type="button" class="tool" id="tool-erase" data-tool="erase">Erase</button>
           </div>
-          <p class="hint" id="build-hint">Paint tiles from Start (S) to Goal (G). Then press Play.</p>
+          <p class="hint" id="build-hint">Broken design — press Play. Then fill the gap and re-run.</p>
         </section>
 
         <section class="run phase-play">
@@ -38,9 +38,10 @@
           <div class="tool-row">
             <button type="button" class="primary" id="btn-play">Play</button>
             <button type="button" id="btn-stop" disabled>Stop</button>
-            <button type="button" id="btn-reset">Reset grid</button>
+            <button type="button" id="btn-reset" title="Restore incomplete starter">Reset</button>
+            <button type="button" id="btn-clear" title="Blank grid (S and G only)">Clear</button>
           </div>
-          <p class="status" id="status">Mode: Build — paint a continuous path from Start (S) to Goal (G).</p>
+          <p class="status" id="status">Mode: Build — broken starter ready. Press Play.</p>
         </section>
 
         <section class="legend" id="legend">

@@ -160,7 +160,7 @@ body {
 .rule-text { font-family: var(--mono); font-size: 0.78rem; line-height: 1.5; }
 
 .tool-row { display: flex; flex-wrap: wrap; gap: 0.45rem; }
-button.tool, button.primary, #btn-stop, #btn-reset {
+button.tool, button.primary, #btn-stop, #btn-reset, #btn-clear {
   font: inherit;
   font-size: 0.9rem;
   min-height: var(--tap-min);
@@ -257,6 +257,13 @@ button:not(:disabled):hover { border-color: var(--accent); }
 .overlay-msg.hidden { display: none; }
 .overlay-msg.fail { border: 2px solid var(--fail); color: #ffc9c9; }
 .overlay-msg.ok { border: 2px solid var(--ok); color: #c8f0cd; }
+.overlay-msg.ok.quiet {
+  border-width: 1px;
+  opacity: 0.85;
+  font-weight: 500;
+  font-size: 0.82rem;
+  padding: 0.4rem 0.7rem;
+}
 
 .footer-note { text-align: center; max-width: 480px; padding: 0 0.5rem; }
 
@@ -355,7 +362,7 @@ body:has(.skin-b) { background: var(--bg); }
 
 @media (max-width: 420px) {
   .tool-row { gap: 0.4rem; }
-  button.tool, button.primary, #btn-stop, #btn-reset {
+  button.tool, button.primary, #btn-stop, #btn-reset, #btn-clear {
     flex: 1 1 auto;
     justify-content: center;
   }

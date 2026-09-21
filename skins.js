@@ -27,7 +27,7 @@
   const skinA = {
     id: "a",
     name: "Abstract",
-    tagline: "Build the path. Press Play. Watch where the promise breaks.",
+    tagline: "Broken design on the board. Press Play. Watch where it breaks.",
     footer:
       "Shapes through structure. Fail marker = exact cell where the path was never finished.",
     legend: [
@@ -102,17 +102,20 @@
         ctx.stroke();
       }
 
-      // Fail locus — strong spatial highlight (phone-readable)
+      // Fail locus — punchy at ~390px: last + missing + arrow/pulse (D2)
       if (state.failLocus) {
         const fc = state.failLocus.cell;
         const fx = ox + fc.c * cell;
         const fy = oy + fc.r * cell;
+        const t = state.failPulseT != null ? state.failPulseT : 0;
+        const pulse = 0.55 + 0.45 * Math.sin(t / 180);
+        const pulse2 = 0.55 + 0.45 * Math.sin(t / 180 + Math.PI);
 
-        // dim board slightly so locus pops
-        ctx.fillStyle = "rgba(0,0,0,0.28)";
+        // dim board so locus pops
+        ctx.fillStyle = "rgba(0,0,0,0.34)";
         ctx.fillRect(ox, oy, cell * size, cell * size);
 
-        // re-draw fail cell + S/G so they sit above the dim
+        // re-draw fail cell + S/G above the dim
         if (state.built[fc.r][fc.c]) {
           ctx.fillStyle = "#3d4149";
           ctx.fillRect(fx + 2, fy + 2, cell - 4, cell - 4);
@@ -123,25 +126,33 @@
         drawLabel(ctx, ox, oy, cell, state.start, "S", "#4ecdc4");
         drawLabel(ctx, ox, oy, cell, state.goal, "G", "#ffe66d");
 
-        // expected empty — dashed + fill + "?" (never-built promise)
+        // expected empty — thicker gap + "?" + pulse wash
         if (state.failLocus.expected) {
           const e = state.failLocus.expected;
           const ex = ox + e.c * cell;
           const ey = oy + e.r * cell;
-          ctx.fillStyle = "rgba(255,107,107,0.22)";
-          ctx.fillRect(ex + 2, ey + 2, cell - 4, cell - 4);
-          ctx.setLineDash([6, 4]);
+          ctx.fillStyle = "rgba(255,107,107," + (0.18 + 0.22 * pulse2).toFixed(3) + ")";
+          ctx.fillRect(ex + 1, ey + 1, cell - 2, cell - 2);
+          ctx.setLineDash([5, 4]);
           ctx.strokeStyle = "#ff6b6b";
-          ctx.lineWidth = Math.max(2.5, cell * 0.06);
-          ctx.strokeRect(ex + 4, ey + 4, cell - 8, cell - 8);
+          ctx.lineWidth = Math.max(3.5, cell * 0.09);
+          ctx.strokeRect(ex + 3, ey + 3, cell - 6, cell - 6);
           ctx.setLineDash([]);
-          ctx.fillStyle = "#ff8e8e";
-          ctx.font = "bold " + Math.floor(cell * 0.32) + "px system-ui,sans-serif";
+          // outer pulse ring on missing cell
+          ctx.save();
+          ctx.globalAlpha = 0.35 + 0.45 * pulse2;
+          ctx.strokeStyle = "#ffc9c9";
+          ctx.lineWidth = Math.max(2, cell * 0.045);
+          const grow = 2 + pulse2 * 4;
+          ctx.strokeRect(ex + 3 - grow, ey + 3 - grow, cell - 6 + grow * 2, cell - 6 + grow * 2);
+          ctx.restore();
+          ctx.fillStyle = "#ffb0b0";
+          ctx.font = "bold " + Math.floor(cell * 0.38) + "px system-ui,sans-serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText("?", ex + cell / 2, ey + cell / 2);
 
-          // connector arrow: last cell → expected gap
+          // connector arrow: last → missing (pulsed width/alpha)
           const x0 = fx + cell / 2;
           const y0 = fy + cell / 2;
           const x1 = ex + cell / 2;
@@ -151,42 +162,45 @@
           const len = Math.sqrt(dx * dx + dy * dy) || 1;
           const ux = dx / len;
           const uy = dy / len;
-          const inset = cell * 0.28;
+          const inset = cell * 0.26;
           const ax0 = x0 + ux * inset;
           const ay0 = y0 + uy * inset;
           const ax1 = x1 - ux * inset;
           const ay1 = y1 - uy * inset;
+          ctx.save();
+          ctx.globalAlpha = 0.75 + 0.25 * pulse;
           ctx.strokeStyle = "#ff6b6b";
-          ctx.lineWidth = Math.max(2.5, cell * 0.055);
+          ctx.lineWidth = Math.max(3.5, cell * 0.08) * (0.85 + 0.3 * pulse);
+          ctx.lineCap = "round";
           ctx.beginPath();
           ctx.moveTo(ax0, ay0);
           ctx.lineTo(ax1, ay1);
           ctx.stroke();
-          // arrowhead
-          const ah = cell * 0.16;
+          const ah = cell * 0.2;
           ctx.beginPath();
           ctx.moveTo(ax1, ay1);
-          ctx.lineTo(ax1 - ux * ah - uy * ah * 0.65, ay1 - uy * ah + ux * ah * 0.65);
-          ctx.lineTo(ax1 - ux * ah + uy * ah * 0.65, ay1 - uy * ah - ux * ah * 0.65);
+          ctx.lineTo(ax1 - ux * ah - uy * ah * 0.7, ay1 - uy * ah + ux * ah * 0.7);
+          ctx.lineTo(ax1 - ux * ah + uy * ah * 0.7, ay1 - uy * ah - ux * ah * 0.7);
           ctx.closePath();
           ctx.fillStyle = "#ff6b6b";
           ctx.fill();
+          ctx.restore();
         }
 
-        // last occupied cell — thick glow ring + X
+        // last occupied — thick glow ring + X (pulsed)
         ctx.save();
         ctx.shadowColor = "#ff6b6b";
-        ctx.shadowBlur = Math.max(16, cell * 0.35);
+        ctx.shadowBlur = Math.max(18, cell * 0.4) * (0.7 + 0.5 * pulse);
         ctx.strokeStyle = "#ff6b6b";
-        ctx.lineWidth = Math.max(3.5, cell * 0.08);
-        ctx.strokeRect(fx + 3, fy + 3, cell - 6, cell - 6);
+        ctx.lineWidth = Math.max(4.5, cell * 0.1);
+        ctx.strokeRect(fx + 2, fy + 2, cell - 4, cell - 4);
         ctx.restore();
-        ctx.fillStyle = "rgba(255,107,107,0.2)";
-        ctx.fillRect(fx + 3, fy + 3, cell - 6, cell - 6);
+        ctx.fillStyle = "rgba(255,107,107," + (0.22 + 0.18 * pulse).toFixed(3) + ")";
+        ctx.fillRect(fx + 2, fy + 2, cell - 4, cell - 4);
 
-        ctx.strokeStyle = "#ffc9c9";
-        ctx.lineWidth = Math.max(2.5, cell * 0.055);
-        const m = cell * 0.26;
+        ctx.strokeStyle = "#ffe0e0";
+        ctx.lineWidth = Math.max(3, cell * 0.065);
+        const m = cell * 0.28;
         const cx = fx + cell / 2;
         const cy = fy + cell / 2;
         ctx.beginPath();
@@ -195,6 +209,15 @@
         ctx.moveTo(cx + m, cy - m);
         ctx.lineTo(cx - m, cy + m);
         ctx.stroke();
+
+        // tiny "HERE" under last cell when cell is large enough
+        if (cell >= 36) {
+          ctx.fillStyle = "#ffc9c9";
+          ctx.font = "bold " + Math.floor(cell * 0.16) + "px system-ui,sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          ctx.fillText("HERE", cx, fy + cell - Math.max(10, cell * 0.2));
+        }
       }
 
     },

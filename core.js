@@ -129,16 +129,64 @@
       success = false;
     }
 
-    function resetGrid() {
-      if (animTimer) {
-        clearInterval(animTimer);
-        animTimer = null;
+    /**
+     * Near-complete S→G path with one intentional gap on the climb
+     * (right column). First Play fails spatially at the gap without
+     * the player crafting a break. Same grid every cold load / Reset.
+     */
+    function starterCells() {
+      const cells = [];
+      // Bottom row: Start → southeast corner
+      for (let c = 0; c < size; c++) {
+        cells.push({ r: start.r, c: c });
       }
+      // Right column climb toward Goal, skip one mid cell (the lie)
+      const gapR = Math.floor(size / 2);
+      for (let r = start.r - 1; r >= 0; r--) {
+        if (r === gapR) continue;
+        cells.push({ r: r, c: goal.c });
+      }
+      return { cells: cells, gap: { r: gapR, c: goal.c } };
+    }
+
+    function applyBlankGrid() {
       for (let r = 0; r < size; r++) {
         for (let c = 0; c < size; c++) {
           built[r][c] = isStart(r, c) || isGoal(r, c);
         }
       }
+    }
+
+    function seedIncompleteStarter() {
+      if (animTimer) {
+        clearInterval(animTimer);
+        animTimer = null;
+      }
+      applyBlankGrid();
+      const starter = starterCells();
+      for (let i = 0; i < starter.cells.length; i++) {
+        const p = starter.cells[i];
+        built[p.r][p.c] = true;
+      }
+      built[start.r][start.c] = true;
+      built[goal.r][goal.c] = true;
+      mode = MODE.BUILD;
+      clearRunState();
+      emit();
+    }
+
+    /** Reset restores the incomplete fail-lesson starter (not blank win farm). */
+    function resetGrid() {
+      seedIncompleteStarter();
+    }
+
+    /** Explicit Clear → blank S/G only (behind Clear control). */
+    function clearGrid() {
+      if (animTimer) {
+        clearInterval(animTimer);
+        animTimer = null;
+      }
+      applyBlankGrid();
       mode = MODE.BUILD;
       clearRunState();
       emit();
@@ -269,7 +317,7 @@
           cell: { r: last.r, c: last.c },
           expected: expected,
           reason: expected
-            ? "Path ends here — the next step was never built."
+            ? "Broke here — next step never built."
             : "Dead end — no onward built tile and Goal not reached.",
         },
       };
@@ -402,6 +450,8 @@
       stop: stop,
       returnToBuild: returnToBuild,
       resetGrid: resetGrid,
+      clearGrid: clearGrid,
+      seedIncompleteStarter: seedIncompleteStarter,
       onChange: onChange,
       snapshot: snapshot,
       exportGrid: exportGrid,

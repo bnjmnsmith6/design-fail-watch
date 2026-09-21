@@ -20,21 +20,29 @@
   }
 
   // Persist grid across skin switches (same page re-render)
-  const STORAGE_KEY = "dfw-v0-grid";
+  const STORAGE_KEY = "dfw-fail-first-v1-grid";
 
-  let skinId = readSkinFromURL();
+  let skinId = "a"; // shareable: Skin A only (D3)
   let game = DFWCore.createGame({ size: GRID });
   let painting = false;
 
-  // Restore grid if present (same session / skin toggle)
+  // Restore grid if present (same session / skin toggle).
+  // Cold load (empty session) → incomplete starter so first Play FAILs.
+  let hadSessionGrid = false;
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (raw) {
       const data = JSON.parse(raw);
-      if (data && data.size === GRID) game.importGrid(data);
+      if (data && data.size === GRID) {
+        game.importGrid(data);
+        hadSessionGrid = true;
+      }
     }
   } catch (e) {
     /* ignore */
+  }
+  if (!hadSessionGrid) {
+    game.seedIncompleteStarter();
   }
 
   const els = {
@@ -51,6 +59,7 @@
     btnPlay: document.getElementById("btn-play"),
     btnStop: document.getElementById("btn-stop"),
     btnReset: document.getElementById("btn-reset"),
+    btnClear: document.getElementById("btn-clear"),
     toolPaint: document.getElementById("tool-paint"),
     toolErase: document.getElementById("tool-erase"),
     btnSkinA: document.getElementById("btn-skin-a"),
@@ -73,8 +82,8 @@
     els.app.classList.add("skin-" + skinId);
     els.tagline.textContent = skin.tagline;
     els.footer.textContent = skin.footer;
-    els.btnSkinA.classList.toggle("active", skinId === "a");
-    els.btnSkinB.classList.toggle("active", skinId === "b");
+    if (els.btnSkinA) els.btnSkinA.classList.toggle("active", skinId === "a");
+    if (els.btnSkinB) els.btnSkinB.classList.toggle("active", skinId === "b");
     els.legendList.innerHTML = "";
     skin.legend.forEach(function (item) {
       const li = document.createElement("li");
@@ -119,8 +128,42 @@
     return Math.max(280, Math.min(CANVAS_CSS, avail || CANVAS_CSS));
   }
 
+  let failPulseRaf = null;
+
+  function stopFailPulse() {
+    if (failPulseRaf != null) {
+      cancelAnimationFrame(failPulseRaf);
+      failPulseRaf = null;
+    }
+  }
+
+  function ensureFailPulse(state) {
+    const need =
+      state.mode === "done" && !state.success && state.failLocus;
+    if (need && failPulseRaf == null) {
+      const tick = function () {
+        failPulseRaf = requestAnimationFrame(tick);
+        const dpr = window.devicePixelRatio || 1;
+        const css = canvasCssSize();
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        DFWSkins.get(skinId).draw(
+          ctx,
+          Object.assign({}, game.snapshot(), {
+            failPulseT: performance.now(),
+          }),
+          css,
+          css
+        );
+      };
+      failPulseRaf = requestAnimationFrame(tick);
+    } else if (!need) {
+      stopFailPulse();
+    }
+  }
+
   function render(state) {
     els.app.classList.toggle("mode-play", state.mode === "play");
+    stopFailPulse();
 
     // HiDPI + responsive CSS size
     const dpr = window.devicePixelRatio || 1;
@@ -134,7 +177,11 @@
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    DFWSkins.get(skinId).draw(ctx, state, css, css);
+    const drawState =
+      state.mode === "done" && !state.success && state.failLocus
+        ? Object.assign({}, state, { failPulseT: performance.now() })
+        : state;
+    DFWSkins.get(skinId).draw(ctx, drawState, css, css);
 
     els.ruleText.textContent = state.RULE_TEXT;
     els.toolPaint.classList.toggle("active", state.tool === "paint");
@@ -144,15 +191,16 @@
     els.btnPlay.disabled = state.mode === "play";
     els.btnStop.disabled = state.mode !== "play";
     els.btnReset.disabled = state.mode === "play";
+    if (els.btnClear) els.btnClear.disabled = state.mode === "play";
 
     if (state.mode === "build") {
       els.status.textContent =
-        "Mode: Build — paint a continuous path from Start (S) to Goal (G), then Play.";
+        "Mode: Build — broken starter on the board. Press Play to see where it breaks, then edit.";
       els.overlay.className = "overlay-msg hidden";
       els.buildHint.textContent =
-        "Paint / drag tiles S→G. Erase removes. Start & Goal stay fixed.";
+        "Broken design — press Play. Then paint the gap and re-run.";
       if (els.glanceHint) {
-        els.glanceHint.textContent = "Paint path S→G, then Play";
+        els.glanceHint.textContent = "Broken design — press Play.";
         els.glanceHint.className = "glance-hint";
       }
     } else if (state.mode === "play") {
@@ -166,29 +214,26 @@
     } else if (state.mode === "done") {
       if (state.success) {
         els.status.textContent =
-          "Complete — continuous path held. Edit freely and Play again (no cost).";
-        els.overlay.className = "overlay-msg ok";
-        els.overlay.textContent = "Reached Goal. Edit tiles and re-run anytime.";
+          "Goal reached — path held. Edit and Play again anytime.";
+        els.overlay.className = "overlay-msg ok quiet";
+        els.overlay.textContent = "Goal.";
         if (els.glanceHint) {
-          els.glanceHint.textContent = "Made it — edit & Play again anytime";
+          els.glanceHint.textContent = "Goal — edit & Play again anytime";
           els.glanceHint.className = "glance-hint done-ok";
         }
       } else {
         const fl = state.failLocus;
+        const coord = "(" + fl.cell.r + "," + fl.cell.c + ")";
         els.status.textContent =
-          "Fail at (" +
-          fl.cell.r +
-          "," +
-          fl.cell.c +
-          ") — " +
-          fl.reason +
-          " Edit and re-run free.";
+          "Fail at " + coord + " — " + fl.reason + " Edit and re-run free.";
         els.overlay.className = "overlay-msg fail";
-        els.overlay.textContent = fl.reason;
+        els.overlay.textContent =
+          "Broke at " + coord + " — next step never built";
         if (els.glanceHint) {
-          els.glanceHint.textContent = "Broke here — fix the gap, then Play";
+          els.glanceHint.textContent = "Broke here — next step never built";
           els.glanceHint.className = "glance-hint done-fail";
         }
+        ensureFailPulse(state);
       }
     }
   }
@@ -212,9 +257,15 @@
     game.stop();
   });
   els.btnReset.addEventListener("click", function () {
-    game.resetGrid();
+    game.resetGrid(); // restores incomplete starter (fail lesson)
     persistGrid();
   });
+  if (els.btnClear) {
+    els.btnClear.addEventListener("click", function () {
+      game.clearGrid(); // blank S/G only
+      persistGrid();
+    });
+  }
 
   els.btnSkinA.addEventListener("click", function () {
     setSkin("a");
@@ -291,4 +342,5 @@
 
   applySkinChrome();
   render(game.snapshot());
+  persistGrid();
 })();
