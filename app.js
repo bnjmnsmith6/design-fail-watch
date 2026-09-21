@@ -83,8 +83,8 @@
     els.app.classList.add("skin-" + skinId);
     els.tagline.textContent = skin.tagline;
     els.footer.textContent = skin.footer;
-    if (els.btnSkinA) if (els.btnSkinA) els.btnSkinA.classList.toggle("active", skinId === "a");
-    if (els.btnSkinB) if (els.btnSkinB) els.btnSkinB.classList.toggle("active", skinId === "b");
+    if (els.btnSkinA) els.btnSkinA.classList.toggle("active", skinId === "a");
+    if (els.btnSkinB) els.btnSkinB.classList.toggle("active", skinId === "b");
     els.legendList.innerHTML = "";
     skin.legend.forEach(function (item) {
       const li = document.createElement("li");
@@ -288,12 +288,17 @@
     });
   }
 
-  els.btnSkinA.addEventListener("click", function () {
-    setSkin("a");
-  });
-  els.btnSkinB.addEventListener("click", function () {
-    setSkin("b");
-  });
+  // Skin A only on shareable — buttons may be absent; never crash before canvas listeners.
+  if (els.btnSkinA) {
+    els.btnSkinA.addEventListener("click", function () {
+      setSkin("a");
+    });
+  }
+  if (els.btnSkinB) {
+    els.btnSkinB.addEventListener("click", function () {
+      setSkin("b");
+    });
+  }
 
   // Canvas paint
   els.canvas.addEventListener("mousedown", function (ev) {
