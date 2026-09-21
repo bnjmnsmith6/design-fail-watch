@@ -79,7 +79,7 @@ body {
   color: var(--accent);
 }
 
-.skin-toggle { display: flex; gap: 0.35rem; flex-shrink: 0; }
+.skin-toggle { display: none !important; } /* F3: Skin A only */ /* shareable: Skin A only */
 .skin-btn {
   font: inherit;
   font-size: 0.85rem;

@@ -135,18 +135,18 @@
      * the player crafting a break. Same grid every cold load / Reset.
      */
     function starterCells() {
+      // Upper/mid gap so fail locus sits in the first phone fold (F1).
+      // Path: climb left column Start→top, across top toward Goal, skip mid-top cell.
       const cells = [];
-      // Bottom row: Start → southeast corner
-      for (let c = 0; c < size; c++) {
-        cells.push({ r: start.r, c: c });
+      for (let r = start.r; r >= 0; r--) {
+        cells.push({ r: r, c: start.c });
       }
-      // Right column climb toward Goal, skip one mid cell (the lie)
-      const gapR = Math.floor(size / 2);
-      for (let r = start.r - 1; r >= 0; r--) {
-        if (r === gapR) continue;
-        cells.push({ r: r, c: goal.c });
+      const gapC = Math.floor(size / 2);
+      for (let c = start.c + 1; c <= goal.c; c++) {
+        if (c === gapC) continue; // the lie — never built
+        cells.push({ r: goal.r, c: c });
       }
-      return { cells: cells, gap: { r: gapR, c: goal.c } };
+      return { cells: cells, gap: { r: goal.r, c: gapC } };
     }
 
     function applyBlankGrid() {

@@ -8,9 +8,7 @@
   const CANVAS_CSS = 480;
 
   function readSkinFromURL() {
-    const q = new URLSearchParams(window.location.search);
-    const s = (q.get("skin") || "a").toLowerCase();
-    return s === "b" ? "b" : "a";
+    return "a"; // shareable / Gate 2b: Skin A only
   }
 
   function writeSkinToURL(skin) {
@@ -26,9 +24,12 @@
   let game = DFWCore.createGame({ size: GRID });
   let painting = false;
 
-  // Restore grid if present (same session / skin toggle).
-  // Cold load (empty session) → incomplete starter so first Play FAILs.
+  // Shareable / Gate 2b: always cold-load incomplete starter (ignore stale session).
   let hadSessionGrid = false;
+  try {
+    sessionStorage.removeItem(STORAGE_KEY);
+  } catch (_) {}
+  // hadSessionGrid stays false — seed below;
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (raw) {
@@ -82,8 +83,8 @@
     els.app.classList.add("skin-" + skinId);
     els.tagline.textContent = skin.tagline;
     els.footer.textContent = skin.footer;
-    if (els.btnSkinA) els.btnSkinA.classList.toggle("active", skinId === "a");
-    if (els.btnSkinB) els.btnSkinB.classList.toggle("active", skinId === "b");
+    if (els.btnSkinA) if (els.btnSkinA) els.btnSkinA.classList.toggle("active", skinId === "a");
+    if (els.btnSkinB) if (els.btnSkinB) els.btnSkinB.classList.toggle("active", skinId === "b");
     els.legendList.innerHTML = "";
     skin.legend.forEach(function (item) {
       const li = document.createElement("li");
@@ -161,6 +162,25 @@
     }
   }
 
+  
+  function scrollFailIntoView() {
+    // F1/F2: keep fail locus in first fold without manual hunt
+    try {
+      const stage = document.getElementById('stage') || els.canvas;
+      if (stage && stage.scrollIntoView) {
+        stage.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+      // Prefer top of board visible on narrow phones
+      if (els.canvas && els.canvas.getBoundingClientRect) {
+        const rect = els.canvas.getBoundingClientRect();
+        if (rect.bottom > window.innerHeight || rect.top < 0) {
+          const y = window.scrollY + rect.top - 12;
+          window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+        }
+      }
+    } catch (_) {}
+  }
+
   function render(state) {
     els.app.classList.toggle("mode-play", state.mode === "play");
     stopFailPulse();
@@ -200,7 +220,8 @@
       els.buildHint.textContent =
         "Broken design — press Play. Then paint the gap and re-run.";
       if (els.glanceHint) {
-        els.glanceHint.textContent = "Broken design — press Play.";
+        scrollFailIntoView();
+      els.glanceHint.textContent = "Broken design — press Play.";
         els.glanceHint.className = "glance-hint";
       }
     } else if (state.mode === "play") {
